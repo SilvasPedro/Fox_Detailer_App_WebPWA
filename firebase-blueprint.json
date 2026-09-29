@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Agendamento de estética automotiva vinculado ao usuário.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID do usuário autenticado no Firebase",
+          "maxLength": 128
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Nome do cliente",
+          "maxLength": 100
+        },
+        "clientPhone": {
+          "type": "string",
+          "description": "Telefone ou WhatsApp do cliente",
+          "maxLength": 30
+        },
+        "vehicleModel": {
+          "type": "string",
+          "description": "Modelo e marca do veículo",
+          "maxLength": 100
+        },
+        "vehiclePlate": {
+          "type": "string",
+          "description": "Placa do veículo",
+          "maxLength": 15
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "Tipo de serviço automotivo (ex: Lavagem Detalhada, Polimento Técnico, Vitrificação)",
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Valor total cobrado pelo serviço em reais"
+        },
+        "scheduledDate": {
+          "type": "string",
+          "description": "Data e hora agendada no formato ISO string",
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "description": "Status do agendamento",
+          "enum": ["pending", "in_progress", "completed", "cancelled"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Observações sobre o estado do carro ou solicitação do cliente",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Data de criação em formato ISO",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Data de atualização em formato ISO",
+          "maxLength": 40
+        }
+      },
+      "required": ["userId", "clientName", "vehicleModel", "serviceType", "price", "scheduledDate", "status"]
+    },
+    "FinancialTransaction": {
+      "title": "FinancialTransaction",
+      "description": "Lançamento de fluxo de caixa (receita ou despesa) da estética automotiva.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID do usuário autenticado",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "description": "Tipo do lançamento: receita ou despesa",
+          "enum": ["income", "expense"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "Valor numérico positivo da transação"
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoria do lançamento",
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "description": "Descrição detalhada do lançamento",
+          "maxLength": 200
+        },
+        "date": {
+          "type": "string",
+          "description": "Data da transação em formato YYYY-MM-DD ou ISO",
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "description": "Status do pagamento",
+          "enum": ["paid", "pending"]
+        },
+        "appointmentId": {
+          "type": "string",
+          "description": "ID do agendamento relacionado se houver",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de criação ISO",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp de atualização ISO",
+          "maxLength": 40
+        }
+      },
+      "required": ["userId", "type", "amount", "category", "description", "date", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Ficha do cliente para fidelização e histórico de veículos.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID do usuário autenticado",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Nome do cliente",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Telefone de contato",
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "description": "Email do cliente",
+          "maxLength": 100
+        },
+        "vehicleModel": {
+          "type": "string",
+          "description": "Modelo principal do veículo",
+          "maxLength": 100
+        },
+        "vehiclePlate": {
+          "type": "string",
+          "description": "Placa do veículo",
+          "maxLength": 15
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de cadastro",
+          "maxLength": 40
+        }
+      },
+      "required": ["userId", "name", "phone", "vehicleModel"]
+    }
+  },
+  "firestore": {
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Agendamentos de clientes cadastrados pelo operador da estética."
+    },
+    "/financial_transactions/{transactionId}": {
+      "schema": "FinancialTransaction",
+      "description": "Transações financeiras de receitas e despesas registradas pelo usuário."
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Clientes e histórico de veículos cadastrados."
+    }
+  }
+}

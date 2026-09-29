@@ -1,0 +1,6 @@
+{
+  "name": "Fox Detailer",
+  "description": "Web app e PWA para gestão de estética automotiva com controle de agendamentos e finanças.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

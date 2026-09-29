@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="foxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A00" />
+      <stop offset="50%" stop-color="#FF5500" />
+      <stop offset="100%" stop-color="#D63A00" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1A1E" />
+      <stop offset="100%" stop-color="#101012" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect width="508" height="508" x="2" y="2" rx="110" fill="none" stroke="#FF6B00" stroke-width="3" stroke-opacity="0.3" />
+
+  <!-- Speed / Sparkle Accents -->
+  <path d="M120 180 L145 180 M95 210 L130 210 M110 240 L135 240" stroke="#FF6B00" stroke-width="4" stroke-linecap="round" stroke-opacity="0.6" />
+  <path d="M392 180 L367 180 M417 210 L382 210 M402 240 L377 240" stroke="#FF6B00" stroke-width="4" stroke-linecap="round" stroke-opacity="0.6" />
+
+  <!-- Stylized Geometric Fox & Automotive Polishing Shield -->
+  <g filter="url(#glow)">
+    <!-- Ears -->
+    <polygon points="140,110 200,210 130,225" fill="#E64A00" />
+    <polygon points="372,110 312,210 382,225" fill="#E64A00" />
+    <!-- Inner Ears -->
+    <polygon points="155,140 195,205 150,215" fill="#FF8833" />
+    <polygon points="357,140 317,205 362,215" fill="#FF8833" />
+
+    <!-- Forehead & Center Brow -->
+    <polygon points="256,155 200,210 312,210" fill="url(#foxGrad)" />
+
+    <!-- Cheeks & Eye Surrounds -->
+    <polygon points="200,210 256,260 160,280 130,225" fill="url(#foxGrad)" />
+    <polygon points="312,210 256,260 352,280 382,225" fill="url(#foxGrad)" />
+
+    <!-- White/Light Muzzle Highlights -->
+    <polygon points="256,260 215,310 180,285 200,250" fill="#F4F4F5" />
+    <polygon points="256,260 297,310 332,285 312,250" fill="#F4F4F5" />
+
+    <!-- Sleek Angular Fox Eyes (Automotive Headlight Inspired) -->
+    <polygon points="185,225 225,232 205,242" fill="#09090B" />
+    <polygon points="327,225 287,232 307,242" fill="#09090B" />
+    <polygon points="195,228 220,233 205,238" fill="#FFB703" />
+    <polygon points="317,228 292,233 307,238" fill="#FFB703" />
+
+    <!-- Snout & Nose -->
+    <polygon points="256,260 225,325 256,365 287,325" fill="url(#foxGrad)" />
+    <polygon points="244,350 268,350 256,365" fill="#09090B" />
+
+    <!-- Automotive Polishing Flare / Diamond Star at Center Bottom -->
+    <path d="M256,395 L263,415 L283,422 L263,429 L256,449 L249,429 L229,422 L249,415 Z" fill="#FF6B00" />
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="256" y="465" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" letter-spacing="4" text-anchor="middle">FOX DETAILER</text>
+  <text x="256" y="488" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="14" fill="#FF6B00" letter-spacing="3" text-anchor="middle">ESTÉTICA AUTOMOTIVA</text>
+</svg>

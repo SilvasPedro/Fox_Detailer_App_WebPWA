@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Connection testing endpoint
+    match /test/{testId} {
+      allow get: if true;
+      allow write: if false;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['userId', 'clientName', 'vehicleModel', 'serviceType', 'price', 'scheduledDate', 'status'])
+        && data.keys().toSet().isSubset(['userId', 'clientName', 'clientPhone', 'vehicleModel', 'vehiclePlate', 'serviceType', 'price', 'scheduledDate', 'status', 'notes', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 100
+        && (!('clientPhone' in data) || (data.clientPhone is string && data.clientPhone.size() <= 30))
+        && data.vehicleModel is string && data.vehicleModel.size() > 0 && data.vehicleModel.size() <= 100
+        && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
+        && data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() <= 100
+        && (data.price is number || data.price is int) && data.price >= 0
+        && data.scheduledDate is string && data.scheduledDate.size() <= 40
+        && data.status in ['pending', 'in_progress', 'completed', 'cancelled']
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(appointmentId) && isValidAppointment(incoming());
+      allow update: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid && isValidAppointment(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'type', 'amount', 'category', 'description', 'date', 'status'])
+        && data.keys().toSet().isSubset(['userId', 'type', 'amount', 'category', 'description', 'date', 'status', 'appointmentId', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.type in ['income', 'expense']
+        && (data.amount is number || data.amount is int) && data.amount >= 0
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 60
+        && data.description is string && data.description.size() <= 200
+        && data.date is string && data.date.size() <= 40
+        && data.status in ['paid', 'pending']
+        && (!('appointmentId' in data) || (data.appointmentId is string && data.appointmentId.size() <= 128))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /financial_transactions/{transactionId} {
+      allow get: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(incoming());
+      allow update: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid && isValidTransaction(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidClient(data) {
+      return data.keys().hasAll(['userId', 'name', 'phone', 'vehicleModel'])
+        && data.keys().toSet().isSubset(['userId', 'name', 'phone', 'email', 'vehicleModel', 'vehiclePlate', 'createdAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() <= 30
+        && (!('email' in data) || (data.email is string && data.email.size() <= 100))
+        && data.vehicleModel is string && data.vehicleModel.size() <= 100
+        && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40));
+    }
+
+    match /clients/{clientId} {
+      allow get: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(clientId) && isValidClient(incoming());
+      allow update: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid && isValidClient(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid;
+    }
+  }
+}
