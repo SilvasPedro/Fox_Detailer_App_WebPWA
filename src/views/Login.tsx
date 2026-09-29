@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
-import { Flame, ShieldCheck, Zap, Calendar, TrendingUp, AlertCircle, Smartphone } from 'lucide-react';
+import {
+  Flame,
+  ShieldCheck,
+  Zap,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
+  Smartphone,
+  Globe,
+  Settings,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { CustomFirebaseModal } from '../components/modals/CustomFirebaseModal';
 
 export const Login: React.FC = () => {
   const { signInWithGoogle, signInDemoUser, error, clearError } = useAuth();
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoadingGoogle(true);
@@ -29,6 +41,12 @@ export const Login: React.FC = () => {
     }
   };
 
+  const isUnauthorizedDomain =
+    error &&
+    (error.includes('unauthorized-domain') ||
+      error.includes('auth/unauthorized-domain') ||
+      error.includes('domínio'));
+
   return (
     <div className="min-h-screen bg-[#121214] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative overflow-hidden">
       {/* Background ambient automotive light cones */}
@@ -44,8 +62,7 @@ export const Login: React.FC = () => {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wider uppercase">
-            <span>Fox</span>{' '}
-            <span className="text-[#FF6B00]">Detailer</span>
+            <span>Fox</span> <span className="text-[#FF6B00]">Detailer</span>
           </h1>
           <p className="mt-2 text-sm text-zinc-400 font-medium">
             Gestão Inteligente para Estética Automotiva
@@ -55,15 +72,33 @@ export const Login: React.FC = () => {
         {/* Login Card */}
         <div className="bg-[#1A1A1E] border border-zinc-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold">Falha na autenticação</p>
-                <p className="mt-0.5 text-zinc-400">{error}</p>
-                <p className="mt-2 text-[11px] text-amber-300">
-                  Dica: Se a janela popup foi bloqueada pelo navegador, experimente o botão de Acesso de Demonstração abaixo.
-                </p>
+            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    {isUnauthorizedDomain
+                      ? 'Domínio não autorizado no Firebase'
+                      : 'Falha na autenticação'}
+                  </p>
+                  <p className="mt-0.5 text-zinc-400">{error}</p>
+                </div>
               </div>
+
+              {isUnauthorizedDomain && (
+                <div className="mt-2 pt-2 border-t border-red-500/20 space-y-2">
+                  <p className="text-[11px] text-amber-300">
+                    O link do Vercel precisa estar cadastrado nos <strong>Domínios Autorizados</strong> do seu próprio projeto Firebase para permitir o login com o Google.
+                  </p>
+                  <button
+                    onClick={() => setIsFirebaseModalOpen(true)}
+                    className="w-full py-2 px-3 rounded-lg bg-[#FF6B00] hover:bg-[#FF7A00] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Configurar Meu Firebase para o Vercel</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -121,9 +156,19 @@ export const Login: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-6 pt-5 border-t border-zinc-800/80 flex items-center justify-center gap-2 text-xs text-zinc-400">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>Autenticação segura via Firebase Auth</span>
+          <div className="mt-6 pt-5 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <span>Firebase Auth</span>
+            </div>
+
+            <button
+              onClick={() => setIsFirebaseModalOpen(true)}
+              className="text-[#FF6B00] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Configurar Vercel / Firebase</span>
+            </button>
           </div>
         </div>
 
@@ -162,6 +207,12 @@ export const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom Firebase Modal */}
+      <CustomFirebaseModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
+      />
     </div>
   );
 };
