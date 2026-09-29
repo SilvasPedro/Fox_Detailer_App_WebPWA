@@ -4,19 +4,16 @@ import {
   Flame,
   Smartphone,
   Database,
-  Globe,
   LogOut,
   RefreshCw,
   CheckCircle2,
-  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
 import { seedInitialAppointments } from '../services/appointmentService';
 import { seedInitialTransactions } from '../services/financeService';
 import { seedInitialClients } from '../services/clientService';
-import { testConnection, getActiveFirebaseConfig } from '../firebase';
-import { CustomFirebaseModal } from '../components/modals/CustomFirebaseModal';
+import { testConnection, firebaseConfig } from '../firebase';
 
 export const SettingsView: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,9 +21,6 @@ export const SettingsView: React.FC = () => {
   const [dbStatus, setDbStatus] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [seedSuccess, setSeedSuccess] = useState(false);
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
-
-  const activeConfig = getActiveFirebaseConfig();
 
   const handleTestDatabase = async () => {
     setTestingDb(true);
@@ -72,36 +66,6 @@ export const SettingsView: React.FC = () => {
         </p>
       </div>
 
-      {/* Vercel & Production Domain Alert Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-orange-950/40 via-[#1A1A1E] to-[#1A1A1E] border border-[#FF6B00]/40 shadow-xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/20 flex items-center justify-center text-[#FF6B00] shrink-0 mt-0.5">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Deploy em Produção & Vercel</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FF7A00] font-bold">
-                  foxdetailerappwebpwa.vercel.app
-                </span>
-              </h3>
-              <p className="text-xs text-zinc-300 mt-1 max-w-xl">
-                Para que o login com Google funcione no link do Vercel e você tenha permissão total para gerenciar o banco de dados diretamente pelo seu e-mail no console do Firebase, conecte o seu próprio projeto.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsFirebaseModalOpen(true)}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#E65A00] text-xs font-bold text-white shadow-lg shadow-orange-600/20 hover:brightness-110 active:scale-95 transition cursor-pointer shrink-0"
-          >
-            <span>Configurar Meu Firebase</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
       {/* Detailer Shop Profile */}
       <div className="p-6 rounded-2xl bg-[#1A1A1E] border border-zinc-800 shadow-xl space-y-4">
         <div className="flex items-center gap-4">
@@ -124,7 +88,7 @@ export const SettingsView: React.FC = () => {
           </div>
           <div>
             <span className="text-zinc-500">E-mail Cadastrado:</span>
-            <p className="font-semibold text-white mt-0.5">{user?.email || 'pedrosouzactt@gmail.com'}</p>
+            <p className="font-semibold text-white mt-0.5">{user?.email || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -188,11 +152,11 @@ export const SettingsView: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-zinc-900/60 p-4 rounded-xl border border-zinc-800/80">
           <div>
             <span className="text-zinc-500">Firebase Project ID:</span>
-            <p className="font-mono text-zinc-300">{activeConfig.projectId}</p>
+            <p className="font-mono text-zinc-300">{firebaseConfig.projectId}</p>
           </div>
           <div>
             <span className="text-zinc-500">Auth Domain:</span>
-            <p className="font-mono text-zinc-300 truncate">{activeConfig.authDomain}</p>
+            <p className="font-mono text-zinc-300 truncate">{firebaseConfig.authDomain}</p>
           </div>
         </div>
 
@@ -234,12 +198,6 @@ export const SettingsView: React.FC = () => {
           <span>Sair da Conta</span>
         </button>
       </div>
-
-      {/* Custom Firebase Modal */}
-      <CustomFirebaseModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
-      />
     </div>
   );
 };

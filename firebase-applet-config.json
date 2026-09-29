@@ -1,12 +1,9 @@
 {
-  "projectId": "dauntless-attic-rfs6l",
-  "appId": "1:812140940350:web:dc019c7472e81205b4d56f",
-  "apiKey": "AIzaSyDwAcsExfdNneSDjHSo5jS56vj-KumJFC4",
-  "authDomain": "dauntless-attic-rfs6l.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-foxdetailer-6e9e6b32-ce39-4de6-9e2a-7646c2b31d55",
-  "storageBucket": "dauntless-attic-rfs6l.firebasestorage.app",
-  "messagingSenderId": "812140940350",
-  "measurementId": "",
-  "oAuthClientId": "812140940350-up1nil7pdsqbo9t2shtfgn6sv8tgjv93.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "prodigy-31b57",
+  "appId": "1:716571493228:web:0d6233ff7ac8e183a4e949",
+  "apiKey": "AIzaSyDy6u_D8f-orOxLCngIdFTVmzEHi1Zhi10",
+  "authDomain": "prodigy-31b57.firebaseapp.com",
+  "storageBucket": "prodigy-31b57.firebasestorage.app",
+  "messagingSenderId": "716571493228",
+  "measurementId": "G-5PSZXCZCEJ"
 }

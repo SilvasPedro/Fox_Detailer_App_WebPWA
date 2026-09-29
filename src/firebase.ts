@@ -1,62 +1,21 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import defaultFirebaseConfig from '../firebase-applet-config.json';
 
-export interface FirebaseCustomConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket?: string;
-  messagingSenderId?: string;
-  appId: string;
-  firestoreDatabaseId?: string;
-}
+export const firebaseConfig = {
+  apiKey: 'AIzaSyDy6u_D8f-orOxLCngIdFTVmzEHi1Zhi10',
+  authDomain: 'prodigy-31b57.firebaseapp.com',
+  projectId: 'prodigy-31b57',
+  storageBucket: 'prodigy-31b57.firebasestorage.app',
+  messagingSenderId: '716571493228',
+  appId: '1:716571493228:web:0d6233ff7ac8e183a4e949',
+  measurementId: 'G-5PSZXCZCEJ',
+};
 
-// Check if user has defined environment variables or custom config in localStorage
-export function getActiveFirebaseConfig(): FirebaseCustomConfig {
-  // 1. Check localStorage for user-provided custom project
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('fox_custom_firebase_config');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.apiKey && parsed.projectId) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse custom Firebase config from localStorage:', e);
-    }
-  }
+// Initialize or retrieve existing app instance
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-  // 2. Check Vite environment variables (useful in Vercel dashboard)
-  if (import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
-    return {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-      firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || undefined,
-    };
-  }
-
-  // 3. Fallback to default AI Studio managed configuration
-  return defaultFirebaseConfig as FirebaseCustomConfig;
-}
-
-const activeConfig = getActiveFirebaseConfig();
-
-// Initialize or retrieve app
-const app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
-
-// CRITICAL: Database ID must be passed to getFirestore as specified in Firebase Skill
-export const db = activeConfig.firestoreDatabaseId
-  ? getFirestore(app, activeConfig.firestoreDatabaseId)
-  : getFirestore(app);
-
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Configure Google Auth Provider
@@ -70,7 +29,7 @@ setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.warn('Failed to set auth persistence:', err);
 });
 
-// Validate connection to Firestore on app boot as required by Firebase skill
+// Validate connection to Firestore on app boot
 export async function testConnection(): Promise<boolean> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
