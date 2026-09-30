@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   User,
@@ -8,18 +8,24 @@ import {
   CheckCircle2,
   Plus,
   Trash2,
+  Edit3,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { createClient } from '../../services/clientService';
+import type { Client } from '../../types';
+import { updateClient } from '../../services/clientService';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onCreated?: () => void;
+  client: Client | null;
+  onUpdated?: () => void;
 }
 
-export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) => {
-  const { user } = useAuth();
+export const EditClientModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  client,
+  onUpdated,
+}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +35,25 @@ export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) 
   const [email, setEmail] = useState('');
   const [vehicles, setVehicles] = useState<string[]>(['']);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (client) {
+      setName(client.name || '');
+      setPhone(client.phone || '');
+      setSecondaryPhone(client.secondaryPhone || '');
+      setEmail(client.email || '');
+
+      if (client.vehicles && client.vehicles.length > 0) {
+        setVehicles(client.vehicles);
+      } else if (client.vehicleModel) {
+        setVehicles([client.vehicleModel]);
+      } else {
+        setVehicles(['']);
+      }
+      setError(null);
+    }
+  }, [client]);
+
+  if (!isOpen || !client) return null;
 
   const handleVehicleChange = (index: number, val: string) => {
     const updated = [...vehicles];
@@ -52,7 +76,6 @@ export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     const filteredVehicles = vehicles
       .map((v) => v.trim())
@@ -67,28 +90,20 @@ export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) 
     setError(null);
 
     try {
-      await createClient({
-        userId: user.uid,
+      await updateClient(client.id, {
         name: name.trim(),
         phone: phone.trim(),
-        secondaryPhone: secondaryPhone.trim() || undefined,
-        email: email.trim() || undefined,
+        secondaryPhone: secondaryPhone.trim() || '',
+        email: email.trim() || '',
         vehicleModel: filteredVehicles[0],
         vehicles: filteredVehicles,
       });
 
-      // Reset fields
-      setName('');
-      setPhone('');
-      setSecondaryPhone('');
-      setEmail('');
-      setVehicles(['']);
-
       onClose();
-      if (onCreated) onCreated();
+      if (onUpdated) onUpdated();
     } catch (err: unknown) {
       console.error(err);
-      setError('Erro ao salvar cliente no Firestore.');
+      setError('Erro ao atualizar cliente no Firestore.');
     } finally {
       setLoading(false);
     }
@@ -106,11 +121,11 @@ export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) 
 
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/15 flex items-center justify-center text-[#FF6B00]">
-            <User className="w-5 h-5" />
+            <Edit3 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Cadastrar Cliente</h3>
-            <p className="text-xs text-zinc-400">Fidelização e histórico veicular</p>
+            <h3 className="text-lg font-bold text-white">Editar Cliente</h3>
+            <p className="text-xs text-zinc-400">Atualize informações de contato e frota</p>
           </div>
         </div>
 
@@ -261,7 +276,7 @@ export const NewClientModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) 
               ) : (
                 <CheckCircle2 className="w-4 h-4" />
               )}
-              <span>Cadastrar Cliente</span>
+              <span>Salvar Alterações</span>
             </button>
           </div>
         </form>

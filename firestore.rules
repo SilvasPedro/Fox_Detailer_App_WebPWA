@@ -30,13 +30,16 @@ service cloud.firestore {
 
     function isValidAppointment(data) {
       return data.keys().hasAll(['userId', 'clientName', 'vehicleModel', 'serviceType', 'price', 'scheduledDate', 'status'])
-        && data.keys().toSet().isSubset(['userId', 'clientName', 'clientPhone', 'vehicleModel', 'vehiclePlate', 'serviceType', 'price', 'scheduledDate', 'status', 'notes', 'createdAt', 'updatedAt'].toSet())
+        && data.keys().toSet().isSubset(['userId', 'clientName', 'clientPhone', 'vehicleModel', 'vehiclePlate', 'serviceType', 'serviceIds', 'subtotal', 'discount', 'price', 'scheduledDate', 'status', 'notes', 'createdAt', 'updatedAt'].toSet())
         && data.userId == request.auth.uid
         && data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 100
         && (!('clientPhone' in data) || (data.clientPhone is string && data.clientPhone.size() <= 30))
         && data.vehicleModel is string && data.vehicleModel.size() > 0 && data.vehicleModel.size() <= 100
         && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
-        && data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() <= 100
+        && data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() <= 200
+        && (!('serviceIds' in data) || (data.serviceIds is list && data.serviceIds.size() <= 30))
+        && (!('subtotal' in data) || ((data.subtotal is number || data.subtotal is int) && data.subtotal >= 0))
+        && (!('discount' in data) || ((data.discount is number || data.discount is int) && data.discount >= 0))
         && (data.price is number || data.price is int) && data.price >= 0
         && data.scheduledDate is string && data.scheduledDate.size() <= 40
         && data.status in ['pending', 'in_progress', 'completed', 'cancelled']
@@ -51,6 +54,26 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(appointmentId) && isValidAppointment(incoming());
       allow update: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid && isValidAppointment(incoming()) && incoming().userId == existing().userId;
       allow delete: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidService(data) {
+      return data.keys().hasAll(['userId', 'name', 'price', 'duration'])
+        && data.keys().toSet().isSubset(['userId', 'name', 'price', 'duration', 'description', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (data.price is number || data.price is int) && data.price >= 0
+        && data.duration is string && data.duration.size() > 0 && data.duration.size() <= 60
+        && (!('description' in data) || (data.description is string && data.description.size() <= 300))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /services/{serviceId} {
+      allow get: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(serviceId) && isValidService(incoming());
+      allow update: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid && isValidService(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid;
     }
 
     function isValidTransaction(data) {
@@ -78,14 +101,17 @@ service cloud.firestore {
 
     function isValidClient(data) {
       return data.keys().hasAll(['userId', 'name', 'phone', 'vehicleModel'])
-        && data.keys().toSet().isSubset(['userId', 'name', 'phone', 'email', 'vehicleModel', 'vehiclePlate', 'createdAt'].toSet())
+        && data.keys().toSet().isSubset(['userId', 'name', 'phone', 'secondaryPhone', 'email', 'vehicleModel', 'vehicles', 'vehiclePlate', 'createdAt', 'updatedAt'].toSet())
         && data.userId == request.auth.uid
         && data.name is string && data.name.size() > 0 && data.name.size() <= 100
         && data.phone is string && data.phone.size() <= 30
+        && (!('secondaryPhone' in data) || (data.secondaryPhone is string && data.secondaryPhone.size() <= 30))
         && (!('email' in data) || (data.email is string && data.email.size() <= 100))
         && data.vehicleModel is string && data.vehicleModel.size() <= 100
+        && (!('vehicles' in data) || (data.vehicles is list && data.vehicles.size() <= 20))
         && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
-        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40));
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
     }
 
     match /clients/{clientId} {

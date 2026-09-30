@@ -7,11 +7,10 @@ import {
   Car,
   User,
   Phone,
-  CheckCircle2,
-  Sparkles,
   Trash2,
   FileText,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import type { Appointment, AppointmentStatus } from '../types';
 import { updateAppointmentStatus, deleteAppointment } from '../services/appointmentService';
@@ -30,6 +29,8 @@ export const AppointmentsView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -46,13 +47,17 @@ export const AppointmentsView: React.FC<Props> = ({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este agendamento?')) return;
+  const confirmDeleteAppointment = async (id: string) => {
     setDeletingId(id);
+    setErrorMessage(null);
     try {
       await deleteAppointment(id);
-    } catch (err) {
+      setAppointmentToDelete(null);
+    } catch (err: unknown) {
       console.error('Failed to delete appointment:', err);
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Erro ao excluir agendamento do Firestore.'
+      );
     } finally {
       setDeletingId(null);
     }
@@ -92,6 +97,22 @@ export const AppointmentsView: React.FC<Props> = ({
           <span>Novo Agendamento</span>
         </button>
       </div>
+
+      {/* Global Error Banner if any */}
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-zinc-400 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Search & Filter Toolbar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -282,16 +303,77 @@ export const AppointmentsView: React.FC<Props> = ({
                 </select>
 
                 <button
-                  onClick={() => handleDelete(app.id)}
+                  type="button"
+                  onClick={() => setAppointmentToDelete(app)}
                   disabled={deletingId === app.id}
                   title="Excluir agendamento"
-                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                  className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deletion */}
+      {appointmentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-[#1A1A1E] border border-zinc-800 p-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setAppointmentToDelete(null);
+                setErrorMessage(null);
+              }}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white mb-2">Excluir Agendamento?</h3>
+            <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+              Deseja realmente remover o agendamento de{' '}
+              <strong className="text-white">{appointmentToDelete.vehicleModel}</strong> para{' '}
+              <strong className="text-white">{appointmentToDelete.clientName}</strong>?
+            </p>
+
+            <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 space-y-1 mb-5">
+              <p>Serviço: <span className="text-zinc-200">{appointmentToDelete.serviceType}</span></p>
+              <p>Valor: <span className="text-emerald-400 font-bold">{formatBRL(appointmentToDelete.price)}</span></p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setAppointmentToDelete(null);
+                  setErrorMessage(null);
+                }}
+                disabled={deletingId === appointmentToDelete.id}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDeleteAppointment(appointmentToDelete.id)}
+                disabled={deletingId === appointmentToDelete.id}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-semibold text-white shadow-lg shadow-red-600/30 transition cursor-pointer disabled:opacity-50"
+              >
+                {deletingId === appointmentToDelete.id ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

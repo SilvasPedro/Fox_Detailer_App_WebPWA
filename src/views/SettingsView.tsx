@@ -7,27 +7,156 @@ import {
   LogOut,
   RefreshCw,
   CheckCircle2,
+  Copy,
+  ExternalLink,
+  ShieldCheck,
+  Code,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
-import { seedInitialAppointments } from '../services/appointmentService';
-import { seedInitialTransactions } from '../services/financeService';
-import { seedInitialClients } from '../services/clientService';
 import { testConnection, firebaseConfig } from '../firebase';
+
+const FIRESTORE_RULES_TEXT = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /test/{testId} {
+      allow get: if true;
+      allow write: if false;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['userId', 'clientName', 'vehicleModel', 'serviceType', 'price', 'scheduledDate', 'status'])
+        && data.keys().toSet().isSubset(['userId', 'clientName', 'clientPhone', 'vehicleModel', 'vehiclePlate', 'serviceType', 'serviceIds', 'subtotal', 'discount', 'price', 'scheduledDate', 'status', 'notes', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 100
+        && (!('clientPhone' in data) || (data.clientPhone is string && data.clientPhone.size() <= 30))
+        && data.vehicleModel is string && data.vehicleModel.size() > 0 && data.vehicleModel.size() <= 100
+        && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
+        && data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() <= 200
+        && (!('serviceIds' in data) || (data.serviceIds is list && data.serviceIds.size() <= 30))
+        && (!('subtotal' in data) || ((data.subtotal is number || data.subtotal is int) && data.subtotal >= 0))
+        && (!('discount' in data) || ((data.discount is number || data.discount is int) && data.discount >= 0))
+        && (data.price is number || data.price is int) && data.price >= 0
+        && data.scheduledDate is string && data.scheduledDate.size() <= 40
+        && data.status in ['pending', 'in_progress', 'completed', 'cancelled']
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(appointmentId) && isValidAppointment(incoming());
+      allow update: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid && isValidAppointment(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(appointmentId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidService(data) {
+      return data.keys().hasAll(['userId', 'name', 'price', 'duration'])
+        && data.keys().toSet().isSubset(['userId', 'name', 'price', 'duration', 'description', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (data.price is number || data.price is int) && data.price >= 0
+        && data.duration is string && data.duration.size() > 0 && data.duration.size() <= 60
+        && (!('description' in data) || (data.description is string && data.description.size() <= 300))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /services/{serviceId} {
+      allow get: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(serviceId) && isValidService(incoming());
+      allow update: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid && isValidService(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(serviceId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'type', 'amount', 'category', 'description', 'date', 'status'])
+        && data.keys().toSet().isSubset(['userId', 'type', 'amount', 'category', 'description', 'date', 'status', 'appointmentId', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.type in ['income', 'expense']
+        && (data.amount is number || data.amount is int) && data.amount >= 0
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 60
+        && data.description is string && data.description.size() <= 200
+        && data.date is string && data.date.size() <= 40
+        && data.status in ['paid', 'pending']
+        && (!('appointmentId' in data) || (data.appointmentId is string && data.appointmentId.size() <= 128))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /financial_transactions/{transactionId} {
+      allow get: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(incoming());
+      allow update: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid && isValidTransaction(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+    }
+
+    function isValidClient(data) {
+      return data.keys().hasAll(['userId', 'name', 'phone', 'vehicleModel'])
+        && data.keys().toSet().isSubset(['userId', 'name', 'phone', 'secondaryPhone', 'email', 'vehicleModel', 'vehicles', 'vehiclePlate', 'createdAt', 'updatedAt'].toSet())
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() <= 30
+        && (!('secondaryPhone' in data) || (data.secondaryPhone is string && data.secondaryPhone.size() <= 30))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 100))
+        && data.vehicleModel is string && data.vehicleModel.size() <= 100
+        && (!('vehicles' in data) || (data.vehicles is list && data.vehicles.size() <= 20))
+        && (!('vehiclePlate' in data) || (data.vehiclePlate is string && data.vehiclePlate.size() <= 15))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /clients/{clientId} {
+      allow get: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(clientId) && isValidClient(incoming());
+      allow update: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid && isValidClient(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(clientId) && existing().userId == request.auth.uid;
+    }
+  }
+}`;
 
 export const SettingsView: React.FC = () => {
   const { user, logout } = useAuth();
   const [testingDb, setTestingDb] = useState(false);
   const [dbStatus, setDbStatus] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
-  const [seedSuccess, setSeedSuccess] = useState(false);
+  const [copiedRules, setCopiedRules] = useState(false);
+  const [showRulesCode, setShowRulesCode] = useState(false);
 
   const handleTestDatabase = async () => {
     setTestingDb(true);
     setDbStatus(null);
     try {
       const ok = await testConnection();
-      setDbStatus(ok ? 'Conexão com Cloud Firestore ativa e respondendo!' : 'Conexão offline ou pendente.');
+      setDbStatus(
+        ok
+          ? 'Conexão com Cloud Firestore ativa e respondendo!'
+          : 'Conexão offline ou pendente.'
+      );
     } catch {
       setDbStatus('Erro ao testar Firestore.');
     } finally {
@@ -35,22 +164,15 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleSeedAll = async () => {
-    if (!user) return;
-    setSeeding(true);
-    setSeedSuccess(false);
+  const copyRulesToClipboard = async () => {
     try {
-      await Promise.all([
-        seedInitialAppointments(user.uid),
-        seedInitialTransactions(user.uid),
-        seedInitialClients(user.uid),
-      ]);
-      setSeedSuccess(true);
-      setTimeout(() => setSeedSuccess(false), 4000);
-    } catch (err) {
-      console.error('Error seeding data:', err);
-    } finally {
-      setSeeding(false);
+      await navigator.clipboard.writeText(FIRESTORE_RULES_TEXT);
+      setCopiedRules(true);
+      setTimeout(() => setCopiedRules(false), 3000);
+    } catch {
+      // Fallback
+      setCopiedRules(true);
+      setTimeout(() => setCopiedRules(false), 3000);
     }
   };
 
@@ -159,28 +281,65 @@ export const SettingsView: React.FC = () => {
             <p className="font-mono text-zinc-300 truncate">{firebaseConfig.authDomain}</p>
           </div>
         </div>
+      </div>
 
-        {/* Demo Seed Section */}
-        <div className="pt-2">
-          <button
-            onClick={handleSeedAll}
-            disabled={seeding}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 border border-zinc-700 transition cursor-pointer"
-          >
-            {seeding ? (
-              <div className="w-4 h-4 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4 text-[#FF6B00]" />
-            )}
-            <span>Carregar Dados Demonstrativos (Agendamentos, Finanças, Clientes)</span>
-          </button>
-          {seedSuccess && (
-            <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Dados inseridos com sucesso no Firestore!</span>
-            </p>
-          )}
+      {/* Firestore Security Rules Guide & Copy Section */}
+      <div className="p-6 rounded-2xl bg-[#1A1A1E] border border-zinc-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Regras de Segurança do Firestore</h3>
+              <p className="text-xs text-zinc-400">
+                Regras que autorizam Agendamentos, Clientes, Finanças e Catálogo de Serviços
+              </p>
+            </div>
+          </div>
         </div>
+
+        <p className="text-xs text-zinc-300 leading-relaxed">
+          Se o seu Firebase Console reportar permissões insuficientes para a coleção de <strong>Serviços</strong>, certifique-se de copiar as regras completas abaixo e colar na aba <em>Regras (Rules)</em> do seu Console do Firebase.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <button
+            onClick={copyRulesToClipboard}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF6B00] hover:bg-[#E65A00] text-xs font-bold text-white shadow-lg shadow-orange-600/20 transition cursor-pointer"
+          >
+            {copiedRules ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
+            <span>{copiedRules ? 'Regras Copiadas com Sucesso!' : 'Copiar Regras (firestore.rules)'}</span>
+          </button>
+
+          <a
+            href={`https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/rules`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-zinc-700 transition"
+          >
+            <span>Abrir Console do Firebase</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+
+          <button
+            onClick={() => setShowRulesCode(!showRulesCode)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-zinc-400 hover:text-white transition cursor-pointer"
+          >
+            <Code className="w-3.5 h-3.5" />
+            <span>{showRulesCode ? 'Ocultar Código' : 'Visualizar Código'}</span>
+          </button>
+        </div>
+
+        {showRulesCode && (
+          <div className="mt-3 p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] font-mono text-zinc-300 max-h-72 overflow-y-auto">
+            <pre className="whitespace-pre-wrap">{FIRESTORE_RULES_TEXT}</pre>
+          </div>
+        )}
       </div>
 
       {/* Logout */}

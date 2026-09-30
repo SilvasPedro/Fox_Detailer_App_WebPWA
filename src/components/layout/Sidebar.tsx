@@ -7,11 +7,12 @@ import {
   Settings,
   LogOut,
   Flame,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PWAInstallButton } from '../pwa/PWAInstallButton';
 
-export type NavTab = 'dashboard' | 'appointments' | 'finance' | 'clients' | 'settings';
+export type NavTab = 'dashboard' | 'appointments' | 'services' | 'finance' | 'clients' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -37,6 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Agendamentos',
       icon: CalendarCheck2,
       badge: pendingCount > 0 ? pendingCount : null,
+    },
+    {
+      id: 'services' as NavTab,
+      label: 'Serviços',
+      icon: Sparkles,
     },
     {
       id: 'finance' as NavTab,

@@ -8,10 +8,24 @@ export interface Appointment {
   vehicleModel: string;
   vehiclePlate?: string;
   serviceType: string;
+  serviceIds?: string[];
+  subtotal?: number;
+  discount?: number;
   price: number;
   scheduledDate: string; // ISO date or YYYY-MM-DDTHH:mm
   status: AppointmentStatus;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DetailingService {
+  id: string;
+  userId: string;
+  name: string;
+  price: number;
+  duration: string; // e.g. "1h 30min", "2h", "4h"
+  description?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,10 +52,13 @@ export interface Client {
   userId: string;
   name: string;
   phone: string;
+  secondaryPhone?: string;
   email?: string;
-  vehicleModel: string;
+  vehicleModel: string; // Primary vehicle for display / compatibility
+  vehicles?: string[]; // All vehicles associated with this client
   vehiclePlate?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface KPIStats {

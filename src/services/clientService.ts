@@ -5,6 +5,7 @@ import {
   onSnapshot,
   addDoc,
   deleteDoc,
+  updateDoc,
   doc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -49,12 +50,22 @@ export async function createClient(
   data: Omit<Client, 'id' | 'createdAt'>
 ): Promise<string> {
   const now = new Date().toISOString();
+  const cleanVehicles = (data.vehicles || [])
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+    .slice(0, 20);
+
+  const primaryVehicle =
+    cleanVehicles.length > 0 ? cleanVehicles[0] : (data.vehicleModel || '').trim();
+
   const cleanPayload = {
     userId: data.userId,
     name: data.name.trim().slice(0, 100),
     phone: data.phone.trim().slice(0, 30),
+    ...(data.secondaryPhone ? { secondaryPhone: data.secondaryPhone.trim().slice(0, 30) } : {}),
     ...(data.email ? { email: data.email.trim().slice(0, 100) } : {}),
-    vehicleModel: data.vehicleModel.trim().slice(0, 100),
+    vehicleModel: primaryVehicle.slice(0, 100),
+    ...(cleanVehicles.length > 0 ? { vehicles: cleanVehicles } : {}),
     ...(data.vehiclePlate
       ? { vehiclePlate: data.vehiclePlate.trim().toUpperCase().slice(0, 15) }
       : {}),
@@ -66,6 +77,52 @@ export async function createClient(
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, COLLECTION_NAME);
+  }
+}
+
+export async function updateClient(
+  clientId: string,
+  data: Partial<Omit<Client, 'id' | 'userId' | 'createdAt'>>
+): Promise<void> {
+  const path = `${COLLECTION_NAME}/${clientId}`;
+  const now = new Date().toISOString();
+
+  let cleanVehicles: string[] | undefined;
+  if (data.vehicles) {
+    cleanVehicles = data.vehicles
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .slice(0, 20);
+  }
+
+  const primaryVehicle =
+    cleanVehicles && cleanVehicles.length > 0
+      ? cleanVehicles[0]
+      : data.vehicleModel
+      ? data.vehicleModel.trim()
+      : undefined;
+
+  const updatePayload: Record<string, unknown> = {
+    updatedAt: now,
+  };
+
+  if (data.name !== undefined) updatePayload.name = data.name.trim().slice(0, 100);
+  if (data.phone !== undefined) updatePayload.phone = data.phone.trim().slice(0, 30);
+  if (data.secondaryPhone !== undefined) {
+    updatePayload.secondaryPhone = data.secondaryPhone.trim().slice(0, 30);
+  }
+  if (data.email !== undefined) updatePayload.email = data.email.trim().slice(0, 100);
+  if (primaryVehicle !== undefined) updatePayload.vehicleModel = primaryVehicle.slice(0, 100);
+  if (cleanVehicles !== undefined) updatePayload.vehicles = cleanVehicles;
+  if (data.vehiclePlate !== undefined) {
+    updatePayload.vehiclePlate = data.vehiclePlate.trim().toUpperCase().slice(0, 15);
+  }
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, clientId);
+    await updateDoc(docRef, updatePayload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
   }
 }
 

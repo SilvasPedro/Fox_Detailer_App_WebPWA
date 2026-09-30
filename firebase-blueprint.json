@@ -144,6 +144,11 @@
           "description": "Telefone de contato",
           "maxLength": 30
         },
+        "secondaryPhone": {
+          "type": "string",
+          "description": "Segundo telefone opcional",
+          "maxLength": 30
+        },
         "email": {
           "type": "string",
           "description": "Email do cliente",
@@ -154,6 +159,10 @@
           "description": "Modelo principal do veículo",
           "maxLength": 100
         },
+        "vehicles": {
+          "type": "array",
+          "description": "Lista de veículos do cliente"
+        },
         "vehiclePlate": {
           "type": "string",
           "description": "Placa do veículo",
@@ -163,9 +172,56 @@
           "type": "string",
           "description": "Timestamp de cadastro",
           "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp de atualização",
+          "maxLength": 40
         }
       },
       "required": ["userId", "name", "phone", "vehicleModel"]
+    },
+    "DetailingService": {
+      "title": "DetailingService",
+      "description": "Serviço do catálogo de estética automotiva com valor e tempo médio.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID do usuário autenticado",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Nome do serviço de detalhamento",
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Valor de tabela do serviço"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Tempo médio estimado de execução",
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "description": "Descrição detalhada do serviço",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de criação",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp de atualização",
+          "maxLength": 40
+        }
+      },
+      "required": ["userId", "name", "price", "duration"]
     }
   },
   "firestore": {
@@ -180,6 +236,10 @@
     "/clients/{clientId}": {
       "schema": "Client",
       "description": "Clientes e histórico de veículos cadastrados."
+    },
+    "/services/{serviceId}": {
+      "schema": "DetailingService",
+      "description": "Catálogo de serviços automotivos da oficina."
     }
   }
 }

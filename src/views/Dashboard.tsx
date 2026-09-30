@@ -11,7 +11,6 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
-  Database,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,8 +23,7 @@ import {
   Legend,
 } from 'recharts';
 import type { Appointment, FinancialTransaction, KPIStats, MonthlyChartPoint } from '../types';
-import { updateAppointmentStatus, seedInitialAppointments } from '../services/appointmentService';
-import { seedInitialTransactions } from '../services/financeService';
+import { updateAppointmentStatus } from '../services/appointmentService';
 import { useAuth } from '../context/AuthContext';
 
 interface DashboardProps {
@@ -52,7 +50,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onGoToFinance,
 }) => {
   const { user } = useAuth();
-  const [seeding, setSeeding] = useState(false);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -72,21 +69,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }).format(d);
     } catch {
       return isoDate;
-    }
-  };
-
-  const handleSeedData = async () => {
-    if (!user) return;
-    setSeeding(true);
-    try {
-      await Promise.all([
-        seedInitialAppointments(user.uid),
-        seedInitialTransactions(user.uid),
-      ]);
-    } catch (err) {
-      console.error('Error seeding data:', err);
-    } finally {
-      setSeeding(false);
     }
   };
 
@@ -145,12 +127,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const recentAppointments = appointments.slice(0, 5);
   const recentTransactions = transactions.slice(0, 5);
 
-  const isDatabaseEmpty = appointments.length === 0 && transactions.length === 0;
+  // The welcome banner only appears when there are no appointments in the system yet
+  const hasNoAppointments = appointments.length === 0;
 
   return (
     <div className="space-y-6">
-      {/* If Database is completely empty, show friendly Welcome & Seed Banner */}
-      {isDatabaseEmpty && (
+      {/* Welcome Banner shown ONLY when there are no appointments in the system */}
+      {hasNoAppointments && (
         <div className="p-6 rounded-2xl bg-gradient-to-r from-[#FF6B00]/15 via-zinc-900 to-[#1A1A1E] border border-[#FF6B00]/30 shadow-xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -160,26 +143,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <h3 className="text-xl font-bold text-white">Sua estética automotiva pronta para acelerar!</h3>
               <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
-                Seu banco de dados Cloud Firestore está ativo e pronto. Você pode cadastrar seus próprios agendamentos e transações, ou carregar dados de demonstração com serviços automotivos realistas.
+                Seu sistema está pronto para uso. Cadastre seu primeiro agendamento para começar a gerenciar sua oficina com controle de serviços, clientes e fluxo de caixa.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={handleSeedData}
-                disabled={seeding}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs sm:text-sm font-semibold text-white border border-zinc-700 transition cursor-pointer"
-              >
-                {seeding ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Database className="w-4 h-4 text-[#FF6B00]" />
-                )}
-                <span>Carregar Dados de Exemplo</span>
-              </button>
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
                 onClick={onNewAppointment}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#E65A00] text-xs sm:text-sm font-semibold text-white shadow-md shadow-orange-600/20 hover:brightness-110 transition cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#E65A00] text-xs sm:text-sm font-semibold text-white shadow-md shadow-orange-600/20 hover:brightness-110 active:scale-95 transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Primeiro Agendamento</span>

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Tag,
   DollarSign,
+  X,
 } from 'lucide-react';
 import type { FinancialTransaction, TransactionType } from '../types';
 import { deleteTransaction } from '../services/financeService';
@@ -28,6 +29,7 @@ export const FinanceView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<FinancialTransaction | null>(null);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -46,11 +48,11 @@ export const FinanceView: React.FC<Props> = ({
 
   const netBalance = totalIncome - totalExpense;
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente remover esta transação?')) return;
+  const confirmDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteTransaction(id);
+      setTransactionToDelete(null);
     } catch (err) {
       console.error('Error deleting transaction:', err);
     } finally {
@@ -276,7 +278,7 @@ export const FinanceView: React.FC<Props> = ({
                   </div>
 
                   <button
-                    onClick={() => handleDelete(t.id)}
+                    onClick={() => setTransactionToDelete(t)}
                     disabled={deletingId === t.id}
                     title="Excluir lançamento"
                     className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
@@ -289,6 +291,55 @@ export const FinanceView: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal for Delete */}
+      {transactionToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-[#1A1A1E] border border-zinc-800 p-6 shadow-2xl relative">
+            <button
+              onClick={() => setTransactionToDelete(null)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white mb-2">Excluir Lançamento?</h3>
+            <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+              Deseja realmente remover o lançamento{' '}
+              <strong className="text-white">"{transactionToDelete.description}"</strong> no valor de{' '}
+              <strong className="text-emerald-400">{formatBRL(transactionToDelete.amount)}</strong>?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setTransactionToDelete(null)}
+                disabled={deletingId === transactionToDelete.id}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDelete(transactionToDelete.id)}
+                disabled={deletingId === transactionToDelete.id}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-semibold text-white shadow-lg shadow-red-600/30 transition cursor-pointer disabled:opacity-50"
+              >
+                {deletingId === transactionToDelete.id ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

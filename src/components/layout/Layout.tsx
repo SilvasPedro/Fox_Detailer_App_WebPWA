@@ -6,9 +6,11 @@ import { OfflineIndicator } from '../pwa/OfflineIndicator';
 import { NewAppointmentModal } from '../modals/NewAppointmentModal';
 import { NewTransactionModal } from '../modals/NewTransactionModal';
 import { NewClientModal } from '../modals/NewClientModal';
+import { NewServiceModal } from '../modals/NewServiceModal';
 
 import { Dashboard } from '../../views/Dashboard';
 import { AppointmentsView } from '../../views/AppointmentsView';
+import { ServicesView } from '../../views/ServicesView';
 import { FinanceView } from '../../views/FinanceView';
 import { ClientsView } from '../../views/ClientsView';
 import { SettingsView } from '../../views/SettingsView';
@@ -21,8 +23,15 @@ import {
   generateMonthlyChartData,
 } from '../../services/financeService';
 import { subscribeClients } from '../../services/clientService';
-import type { Appointment, FinancialTransaction, Client, KPIStats } from '../../types';
-import { Calendar, DollarSign, User, X } from 'lucide-react';
+import { subscribeServices } from '../../services/serviceService';
+import type {
+  Appointment,
+  FinancialTransaction,
+  Client,
+  DetailingService,
+  KPIStats,
+} from '../../types';
+import { Calendar, DollarSign, User, Sparkles, X } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { user } = useAuth();
@@ -32,12 +41,14 @@ export const Layout: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [services, setServices] = useState<DetailingService[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Modals
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
 
   // Real-time Firestore Listeners
@@ -46,6 +57,7 @@ export const Layout: React.FC = () => {
       setAppointments([]);
       setTransactions([]);
       setClients([]);
+      setServices([]);
       setLoadingData(false);
       return;
     }
@@ -88,10 +100,20 @@ export const Layout: React.FC = () => {
       () => {}
     );
 
+    // Subscribe to user's detailing services
+    const unsubServices = subscribeServices(
+      user.uid,
+      (data) => {
+        setServices(data);
+      },
+      () => {}
+    );
+
     return () => {
       unsubAppointments();
       unsubTransactions();
       unsubClients();
+      unsubServices();
     };
   }, [user]);
 
@@ -142,6 +164,14 @@ export const Layout: React.FC = () => {
             />
           )}
 
+          {activeTab === 'services' && (
+            <ServicesView
+              services={services}
+              loading={loadingData}
+              onNewService={() => setIsServiceModalOpen(true)}
+            />
+          )}
+
           {activeTab === 'finance' && (
             <FinanceView
               transactions={transactions}
@@ -177,6 +207,8 @@ export const Layout: React.FC = () => {
       <NewAppointmentModal
         isOpen={isAppointmentModalOpen}
         onClose={() => setIsAppointmentModalOpen(false)}
+        clients={clients}
+        services={services}
       />
 
       <NewTransactionModal
@@ -187,6 +219,11 @@ export const Layout: React.FC = () => {
       <NewClientModal
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
+      />
+
+      <NewServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
       />
 
       {/* Mobile Quick Action Drawer */}
@@ -216,6 +253,22 @@ export const Layout: React.FC = () => {
                 <div>
                   <p className="text-sm font-bold text-white">Novo Agendamento</p>
                   <p className="text-xs text-zinc-400">Marcar serviço de estética automotiva</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsQuickActionOpen(false);
+                  setIsServiceModalOpen(true);
+                }}
+                className="flex items-center gap-3 p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-[#FF6B00] text-left transition"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Novo Serviço de Catálogo</p>
+                  <p className="text-xs text-zinc-400">Cadastrar serviço, valor e tempo médio</p>
                 </div>
               </button>
 
